@@ -1,10 +1,12 @@
-# 🤖 Ollama Summarization Guide
+# 🤖 Ollama Summarization & Translation Guide
 
 ## Overview
 
-This guide explains how to use Ollama to summarize transcribed videos while maintaining privacy protection. The complete workflow ensures that **confidential information never leaves your system** in its original form.
+This guide explains how to use Ollama to **summarize** and **translate** transcribed videos while maintaining privacy protection. The complete workflow ensures that **confidential information never leaves your system** in its original form.
 
 ## Complete Workflow
+
+### Summarization Flow
 
 ```
 Video File
@@ -18,6 +20,22 @@ Video File
 [4] Restore → Convert "AC" → "Anh chị", "KT" → "Kiến thức"
     ↓
 Final Summary (with confidential info restored for authorized users)
+```
+
+### Translation Flow
+
+```
+Video File
+    ↓
+[1] Transcribe → Creates original.txt + sanitized.txt
+    ↓
+[2] Sanitize → Replace "Anh chị" → "AC", "Kiến thức" → "KT"
+    ↓
+[3] Translate (Ollama) → Vietnamese "AC, KT" → English "AC, KT"
+    ↓
+[4] Restore → Convert "AC" → "Anh chị", "KT" → "Kiến thức"
+    ↓
+Final Translation (with confidential info restored in target language)
 ```
 
 ## Prerequisites
@@ -74,8 +92,9 @@ Should show your downloaded models.
 
 ### Option 1: Complete Pipeline (Recommended)
 
-Process video → transcribe → sanitize → summarize → restore in one command:
+Process video → transcribe → sanitize → summarize/translate → restore in one command:
 
+#### Summarization Only
 ```bash
 python process_video_complete.py presentation.mp4
 ```
@@ -85,6 +104,27 @@ python process_video_complete.py presentation.mp4
 - `presentation_sanitized.txt` - Safe version (no confidential info)
 - `presentation_summary_sanitized.txt` - Summary (sanitized)
 - `presentation_summary_restored.txt` - Summary (confidential info restored)
+
+#### Translation Only
+```bash
+python process_video_complete.py presentation.mp4 --translate English --skip-summary
+```
+
+**Output files:**
+- `presentation.txt` - Original transcription
+- `presentation_sanitized.txt` - Safe version
+- `presentation_translation_english_sanitized.txt` - Translation (sanitized)
+- `presentation_translation_english_restored.txt` - Translation (restored)
+
+#### Both Summarization AND Translation
+```bash
+python process_video_complete.py presentation.mp4 --translate Japanese --max-length 200
+```
+
+**Output files:**
+- Original transcription files
+- Summary files (both sanitized and restored)
+- Translation files (both sanitized and restored)
 
 ### Option 2: Step-by-Step Workflow
 
@@ -98,7 +138,7 @@ python main.py presentation.mp4
 - `presentation.txt` (original)
 - `presentation_sanitized.txt` (confidential info removed)
 
-#### Step 2: Summarize Sanitized Text
+#### Step 2A: Summarize Sanitized Text
 
 ```bash
 python summarize_with_ollama.py presentation_sanitized.txt
@@ -107,6 +147,16 @@ python summarize_with_ollama.py presentation_sanitized.txt
 **Creates:**
 - `presentation_summary_sanitized.txt` (summary with codes)
 - `presentation_summary_restored.txt` (summary with confidential info)
+
+#### Step 2B: Translate Sanitized Text
+
+```bash
+python translate_with_ollama.py presentation_sanitized.txt --target-lang English
+```
+
+**Creates:**
+- `presentation_translation_english_sanitized.txt` (translation with codes)
+- `presentation_translation_english_restored.txt` (translation with confidential info)
 
 ## Command Options
 
@@ -122,8 +172,17 @@ python process_video_complete.py video.mp4 --model llama2
 # Skip summarization (transcription only)
 python process_video_complete.py video.mp4 --skip-summary
 
-# Keep summary sanitized (don't restore confidential info)
-python process_video_complete.py video.mp4 --keep-sanitized
+# Translate to English
+python process_video_complete.py video.mp4 --translate English
+
+# Translate with source language specified
+python process_video_complete.py video.mp4 --translate English --source-lang Vietnamese
+
+# Summarize AND translate
+python process_video_complete.py video.mp4 --translate Japanese --max-length 200
+
+# Keep summary/translation sanitized (don't restore confidential info)
+python process_video_complete.py video.mp4 --translate English --keep-sanitized
 
 # Limit summary length
 python process_video_complete.py video.mp4 --max-length 200
@@ -149,6 +208,29 @@ python summarize_with_ollama.py video_sanitized.txt --prompt "Create a 5-point s
 
 # Check Ollama status
 python summarize_with_ollama.py --check
+```
+
+### translate_with_ollama.py
+
+```bash
+# Basic translation to English
+python translate_with_ollama.py video_sanitized.txt --target-lang English
+
+# Translate to Japanese with specific model
+python translate_with_ollama.py video_sanitized.txt --target-lang Japanese --model llama2
+
+# Keep translation sanitized (don't restore)
+python translate_with_ollama.py video_sanitized.txt --target-lang English --keep-sanitized
+
+# Specify source language
+python translate_with_ollama.py video_sanitized.txt --target-lang English --source-lang Vietnamese
+
+# Custom translation prompt
+python translate_with_ollama.py video_sanitized.txt --target-lang English \
+  --prompt "Translate professionally: {text}"
+
+# Check Ollama status
+python translate_with_ollama.py --check
 ```
 
 ## Examples
@@ -181,25 +263,99 @@ python summarize_with_ollama.py video_sanitized.txt --keep-sanitized
 # Now share: video_summary_sanitized.txt (safe to share)
 ```
 
+### Example 4: Translate to English
+
+```bash
+# Translate Vietnamese video to English
+python translate_with_ollama.py meeting_sanitized.txt --target-lang English
+
+# Result: 
+#   meeting_translation_english_sanitized.txt (codes: AC, KT - safe to share)
+#   meeting_translation_english_restored.txt (Vietnamese terms: Anh chị, Kiến thức)
+
+# Note: Restored version has Vietnamese confidential terms in English text
+# Example: "Hello Anh chị, learning new Kiến thức"
+```
+
+### Example 5: Translate to Multiple Languages
+
+```bash
+# Complete pipeline - transcribe and translate
+python process_video_complete.py presentation.mp4 --translate English
+
+# Translate to another language
+python translate_with_ollama.py presentation_sanitized.txt --target-lang Japanese
+
+# Translate to a third language
+python translate_with_ollama.py presentation_sanitized.txt --target-lang Chinese
+```
+
+### Example 6: Summarize AND Translate
+
+```bash
+# Get both summary and translation in one command
+python process_video_complete.py training.mp4 --translate English --max-length 150
+
+# Output:
+#   - training_summary_sanitized.txt & training_summary_restored.txt
+#   - training_translation_english_sanitized.txt & training_translation_english_restored.txt
+```
+
 ## Privacy Protection
 
-### How It Works
+### How Summarization Works
 
 1. **Original Content**: "Xin chào Anh chị, hôm nay ta học Kiến thức mới"
 2. **Sanitized** (sent to Ollama): "Xin chào AC, hôm nay ta học KT mới"
 3. **Ollama Summary** (sanitized): "Buổi học giới thiệu AC với KT mới"
 4. **Restored**: "Buổi học giới thiệu Anh chị với Kiến thức mới"
 
+### How Translation Works
+
+1. **Original (Vietnamese)**: "Xin chào Anh chị, hôm nay ta học Kiến thức mới"
+2. **Sanitized** (sent to Ollama): "Xin chào AC, hôm nay ta học KT mới"
+3. **Ollama Translation** (English, sanitized): "Hello AC, today we learn new KT"
+4. **Restored**: "Hello Anh chị, today we learn new Kiến thức"
+
+⚠️ **Important**: Restored translations contain **original language terms** in the target language text. This is intentional to preserve confidential information for authorized users. If you want to keep codes (AC, KT) for sharing, use `--keep-sanitized` flag.
+
 ### Key Points
 
 ✅ **Ollama only sees sanitized text** - No confidential information leaked  
-✅ **Summary inherits protection** - AC and KT used instead of originals  
-✅ **Restoration is optional** - Can keep summary sanitized for sharing  
+✅ **Summaries/Translations inherit protection** - AC and KT used instead of originals  
+✅ **Restoration is optional** - Can keep outputs sanitized for sharing  
 ✅ **Local processing** - Everything runs on your machine  
+✅ **Multiple languages** - Translate to any language Ollama supports  
+
+## Supported Translation Languages
+
+Ollama models support translation to/from many languages:
+
+**Major Languages:**
+- English
+- Japanese (日本語)
+- Chinese (中文)
+- Spanish (Español)
+- French (Français)
+- German (Deutsch)
+- Korean (한국어)
+- Portuguese (Português)
+- Russian (Русский)
+- Italian (Italiano)
+
+**Other Supported Languages:**
+- Arabic, Dutch, Hindi, Thai, Turkish, Vietnamese (native), Polish, Swedish, Danish, Norwegian, Finnish, and many more!
+
+**Usage:**
+```bash
+# Just specify the language name
+python translate_with_ollama.py video_sanitized.txt --target-lang "Japanese"
+python translate_with_ollama.py video_sanitized.txt --target-lang "中文"  # Chinese characters work too
+```  
 
 ## Testing
 
-### Test Complete Pipeline
+### Test Summarization Pipeline
 
 ```bash
 python test_complete_pipeline.py
@@ -211,17 +367,29 @@ python test_complete_pipeline.py
 - ✓ Restoration (codes → confidential)
 - ✓ File operations
 
+### Test Translation Pipeline
+
+```bash
+python test_translation.py
+```
+
+**This tests:**
+- ✓ Sanitization before translation
+- ✓ Translation with privacy protection
+- ✓ Code preservation during translation
+- ✓ Restoration in translated text
+
 **Expected output:**
 ```
-✅ ALL TESTS PASSED
+✅ TRANSLATION TEST PASSED
 
-The complete pipeline is working correctly:
-  • Transcription → Sanitization ✓
-  • Sanitized text → Summarization ✓
-  • Summary → Restoration ✓
-  • File operations ✓
+The translation pipeline is working correctly:
+  • Vietnamese → Sanitization ✓
+  • Sanitized text → Translation ✓
+  • Translation → Restoration ✓
+  • Confidential info protected ✓
 
-🔒 Confidential information is protected throughout the process!
+🔒 Confidential information is protected during translation!
 ```
 
 ## Troubleshooting
@@ -444,13 +612,25 @@ A: No, Ollama runs completely locally. No data leaves your machine.
 A: Yes! Use `--skip-summary` to skip summarization and only transcribe.
 
 **Q: What languages does this support?**  
-A: WhisperX supports 90+ languages. Ollama models work with most major languages.
+A: WhisperX transcription supports 90+ languages. Ollama translation supports all major languages (English, Japanese, Chinese, Spanish, French, German, Korean, etc.).
 
-**Q: How accurate is the summarization?**  
-A: Depends on the model. llama3.2 and llama2 are quite good for general content.
+**Q: How accurate is the summarization/translation?**  
+A: Depends on the model. llama3.2 and llama2 are quite good for general content and multiple languages.
 
-**Q: Can I summarize without restoring?**  
-A: Yes! Use `--keep-sanitized` flag to keep the summary sanitized.
+**Q: Can I summarize/translate without restoring?**  
+A: Yes! Use `--keep-sanitized` flag to keep outputs sanitized (safe to share).
+
+**Q: Can I translate to multiple languages?**  
+A: Yes! Run the translate command multiple times with different `--target-lang` values.
+
+**Q: Does translation preserve confidential codes?**  
+A: Yes! Ollama is instructed to keep codes like AC and KT unchanged during translation.
+
+**Q: Why does the restored translation have Vietnamese words in English text?**  
+A: This is intentional. Restoration converts codes (AC, KT) back to their original Vietnamese terms ("Anh chị", "Kiến thức") to preserve confidential information for authorized users. If you want English-only text with codes, use `--keep-sanitized` flag.
+
+**Q: Which file should I share with others?**  
+A: Always share the `*_sanitized.txt` files (with AC, KT codes). Never share `*_restored.txt` files unless the recipient is authorized to see confidential information.
 
 **Q: Is this safe for highly confidential content?**  
 A: Yes, as long as:
@@ -466,18 +646,26 @@ A: Yes, as long as:
 # Complete pipeline (one command)
 python process_video_complete.py video.mp4
 
-# Just summarize existing sanitized file
+# Complete pipeline with translation
+python process_video_complete.py video.mp4 --translate English
+
+# Summarize existing sanitized file
 python summarize_with_ollama.py video_sanitized.txt
+
+# Translate existing sanitized file
+python translate_with_ollama.py video_sanitized.txt --target-lang Japanese
 
 # Check Ollama status
 python summarize_with_ollama.py --check
+python translate_with_ollama.py --check
 
 # Test everything
 python test_complete_pipeline.py
+python test_translation.py
 ```
 
 **Need help?** Check the main [README.md](README.md) or [PRIVACY_GUIDE.md](PRIVACY_GUIDE.md) for more information.
 
 ---
 
-**🔒 Remember: This system protects confidential information by never exposing it to the LLM in its original form!**
+**🔒 Remember: This system protects confidential information by never exposing it to the LLM in its original form - whether summarizing or translating!**

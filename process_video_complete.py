@@ -35,9 +35,10 @@ except ImportError:
 
 try:
     from summarize_with_ollama import summarize_text, check_ollama_service, check_model_available
+    from translate_with_ollama import translate_text
     from reverse_sanitize import reverse_sanitize_text, create_reverse_mapping
 except ImportError:
-    print("Error: Required modules (summarize_with_ollama.py or reverse_sanitize.py) not found")
+    print("Error: Required modules (summarize_with_ollama.py, translate_with_ollama.py or reverse_sanitize.py) not found")
     sys.exit(1)
 
 
@@ -54,18 +55,22 @@ def complete_pipeline(
     custom_prompt=None,
     max_summary_length=None,
     skip_summary=False,
-    keep_sanitized=False
+    keep_sanitized=False,
+    translate_to=None,
+    translate_source=None
 ):
     """
     Execute the complete video processing pipeline.
     
     Args:
         video_path: Path to input video file
-        model: Ollama model for summarization
+        model: Ollama model for summarization/translation
         custom_prompt: Custom prompt for Ollama
         max_summary_length: Maximum summary length in words
         skip_summary: Skip summarization step
-        keep_sanitized: Keep summary sanitized
+        keep_sanitized: Keep summary/translation sanitized
+        translate_to: Target language for translation (None = no translation)
+        translate_source: Source language for translation
         
     Returns:
         dict: Paths to all generated files
@@ -139,10 +144,10 @@ def complete_pipeline(
                 
                 # STEP 3: Restore confidential information
                 if not keep_sanitized:
-                    print_section("STEP 3: RESTORE CONFIDENTIAL INFORMATION")
+                    step_num = 4 if translate_to else 3
+                    print_section(f"STEP {step_num}: RESTORE CONFIDENTIAL INFORMATION (Summary)")
                     
-                    reverse_map = create_reverse_mapping()
-                    restored_summary = reverse_sanitize_text(summary, reverse_map)
+                    restored_summary = reverse_sanitize_text(summary)
                     
                     summary_restored_path = video_path.parent / f"{base_name}_summary_restored.txt"
                     
@@ -157,6 +162,74 @@ def complete_pipeline(
             print(f"Error during summarization: {e}")
             skip_summary = True
     
+    # STEP 4 (or 3): Translate sanitized text
+    if translate_to:
+        step_num = 4 if not skip_summary else 3
+        print_section(f"STEP {step_num}: OLLAMA TRANSLATION")
+        
+        # Check Ollama (if not already checked)
+        if skip_summary and not check_ollama_service():
+            print("Warning: Ollama not available, skipping translation")
+            translate_to = None
+        elif skip_summary and not check_model_available(model):
+            print(f"Warning: Model {model} not available, skipping translation")
+            translate_to = None
+    
+    if translate_to:
+        try:
+            # Read sanitized text
+            with open(sanitized_txt, 'r', encoding='utf-8') as f:
+                sanitized_content = f.read()
+            
+            print(f"Input: {Path(sanitized_txt).name}")
+            print(f"Target language: {translate_to}")
+            if translate_source:
+                print(f"Source language: {translate_source}")
+            print(f"Model: {model}")
+            
+            # Generate translation
+            translation = translate_text(
+                sanitized_content,
+                target_language=translate_to,
+                model=model,
+                source_language=translate_source
+            )
+            
+            if translation is None:
+                print("Warning: Translation failed")
+            else:
+                # Save sanitized translation
+                base_name = video_path.stem
+                safe_lang = translate_to.lower().replace(' ', '_')
+                translation_sanitized_path = video_path.parent / f"{base_name}_translation_{safe_lang}_sanitized.txt"
+                
+                with open(translation_sanitized_path, 'w', encoding='utf-8') as f:
+                    f.write(translation)
+                
+                results['translation_sanitized'] = str(translation_sanitized_path)
+                print(f"\n✓ Sanitized translation: {translation_sanitized_path.name}")
+                print(f"  Length: {len(translation)} characters")
+                
+                # Restore confidential information
+                if not keep_sanitized:
+                    if not skip_summary:
+                        print_section(f"STEP 5: RESTORE CONFIDENTIAL INFORMATION (Translation)")
+                    restored_translation = reverse_sanitize_text(translation)
+                    
+                    translation_restored_path = video_path.parent / f"{base_name}_translation_{safe_lang}_restored.txt"
+                    
+                    with open(translation_restored_path, 'w', encoding='utf-8') as f:
+                        f.write(restored_translation)
+                    
+                    results['translation_restored'] = str(translation_restored_path)
+                    print(f"✓ Restored translation: {translation_restored_path.name}")
+                    print(f"  Confidential information restored")
+                
+        except Exception as e:
+            print(f"Error during translation: {e}")
+            import traceback
+            traceback.print_exc()
+    
     return results
 
 
@@ -168,7 +241,8 @@ def main():
 Complete Workflow:
   1. Transcribe video → Creates original.txt and sanitized.txt
   2. Summarize sanitized text using Ollama → Creates summary_sanitized.txt
-  3. Restore confidential info in summary → Creates summary_restored.txt
+  3. Translate sanitized text using Ollama → Creates translation_sanitized.txt
+  4. Restore confidential info → Creates summary_restored.txt and translation_restored.txt
 
 Examples:
   # Full pipeline with defaults
@@ -180,17 +254,39 @@ Examples:
   # Skip summarization (only transcribe)
   python process_video_complete.py video.mp4 --skip-summary
   
-  # Keep summary sanitized (don't restore)
-  python process_video_complete.py video.mp4 --keep-sanitized
+  # Translate to English (restored version will have Vietnamese terms in English text)
+  python process_video_complete.py video.mp4 --translate English
+  
+  # Keep translation sanitized (codes like AC, KT remain - safe to share)
+  python process_video_complete.py video.mp4 --translate English --keep-sanitized
+  
+  # Translate with source language specified
+  python process_video_complete.py video.mp4 --translate English --source-lang Vietnamese
+  
+  # Summarize AND translate
+  python process_video_complete.py video.mp4 --translate Japanese --max-length 200
+  
+  # Keep summary/translation sanitized (don't restore)
+  python process_video_complete.py video.mp4 --translate English --keep-sanitized
   
   # Custom summary length
   python process_video_complete.py video.mp4 --max-length 150
 
 Output Files:
-  - {video}.txt                    Original transcription
-  - {video}_sanitized.txt          Sanitized transcription
-  - {video}_summary_sanitized.txt  Sanitized summary
-  - {video}_summary_restored.txt   Restored summary (with confidential info)
+  - {video}.txt                              Original transcription
+  - {video}_sanitized.txt                    Sanitized transcription
+  - {video}_summary_sanitized.txt            Sanitized summary
+  - {video}_summary_restored.txt             Restored summary (with confidential info)
+  - {video}_translation_{lang}_sanitized.txt Sanitized translation (codes: AC, KT)
+  - {video}_translation_{lang}_restored.txt  Restored translation (original terms: Anh chị, Kiến thức)
+
+Note on Translation Restoration:
+  By default, confidential terms are restored to their ORIGINAL language (Vietnamese) 
+  in the translated text. This means:
+  
+  Example: "Hello AC, learning new KT" → "Hello Anh chị, learning new Kiến thức"
+  
+  If you want to keep codes (AC, KT) in translation for sharing, use --keep-sanitized flag.
 """
     )
     
@@ -225,7 +321,18 @@ Output Files:
     parser.add_argument(
         '--keep-sanitized', '-k',
         action='store_true',
-        help='Keep summary sanitized (do not restore confidential info)'
+        help='Keep summary/translation sanitized (do not restore confidential info)'
+    )
+    
+    parser.add_argument(
+        '--translate', '-t',
+        dest='translate_to',
+        help='Translate to target language (e.g., English, Japanese, Chinese, Spanish)'
+    )
+    
+    parser.add_argument(
+        '--source-lang',
+        help='Source language for translation (optional, auto-detect if not specified)'
     )
     
     args = parser.parse_args()
@@ -242,7 +349,9 @@ Output Files:
         custom_prompt=args.prompt,
         max_summary_length=args.max_length,
         skip_summary=args.skip_summary,
-        keep_sanitized=args.keep_sanitized
+        keep_sanitized=args.keep_sanitized,
+        translate_to=args.translate_to,
+        translate_source=args.source_lang
     )
     
     if results:
@@ -264,6 +373,10 @@ Output Files:
             print("  3. Sanitized text → Summarized by Ollama")
         if 'summary_restored' in results:
             print("  4. Summary → Restored (confidential info recovered)")
+        if 'translation_sanitized' in results:
+            print(f"  {len([k for k in results if 'summary' in k]) + 3}. Sanitized text → Translated by Ollama")
+        if 'translation_restored' in results:
+            print(f"  {len([k for k in results if 'summary' in k or 'translation_sanitized' in k]) + 3}. Translation → Restored (confidential info recovered)")
         
         print("\n✓ Confidential information protected throughout the process")
         return 0

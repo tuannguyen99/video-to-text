@@ -262,6 +262,70 @@ Final: "Buổi học giới thiệu Anh chị với Kiến thức"
 
 📖 **For complete Ollama setup and usage, see:** [OLLAMA_SUMMARY_GUIDE.md](OLLAMA_SUMMARY_GUIDE.md)
 
+### LLM Translation with Ollama (NEW!)
+
+Translate your transcriptions to any language while maintaining privacy protection:
+
+#### Complete Pipeline with Translation
+
+Process video → transcribe → sanitize → translate → restore in one command:
+
+```bash
+# Translate to English
+python process_video_complete.py presentation.mp4 --translate English
+
+# Translate to Japanese with specific model
+python process_video_complete.py video.mp4 --translate Japanese --model llama2
+
+# Translate AND summarize
+python process_video_complete.py video.mp4 --translate English --max-length 200
+
+# Specify source language explicitly
+python process_video_complete.py video.mp4 --translate English --source-lang Vietnamese
+```
+
+**Output files:**
+- `video.txt` - Original transcription
+- `video_sanitized.txt` - Sanitized transcription (safe to share)
+- `video_translation_english_sanitized.txt` - Sanitized translation (safe to share)
+- `video_translation_english_restored.txt` - Restored translation (confidential)
+
+#### Step-by-Step Translation
+
+```bash
+# Step 1: Transcribe video
+python main.py presentation.mp4
+
+# Step 2: Translate sanitized transcription
+python translate_with_ollama.py presentation_sanitized.txt --target-lang English
+```
+
+#### Privacy Protection in Translation
+
+```
+Original (Vietnamese): "Xin chào Anh chị, học Kiến thức mới"
+    ↓ (Sanitization)
+Sanitized: "Xin chào AC, học KT mới"
+    ↓ (Sent to Ollama for translation - No confidential info leaked!)
+Translation (English): "Hello AC, learning new KT"
+    ↓ (Restoration)
+Final: "Hello Anh chị, learning new Kiến thức"
+```
+
+🔒 **Key Point**: Ollama only sees codes (AC, KT) during translation, never the original confidential terms!
+
+⚠️ **Important Note**: By default, restored translations contain **original language terms** (Vietnamese) mixed with the target language. If you need codes to remain (for sharing), use the `--keep-sanitized` flag:
+
+```bash
+# Keep codes in translation (safe to share)
+python process_video_complete.py video.mp4 --translate English --keep-sanitized
+# Result: "Hello AC, learning new KT" (codes remain)
+```
+
+**Supported Languages**: English, Japanese, Chinese, Spanish, French, German, Korean, and many more!
+
+📖 **For complete translation guide, see:** [OLLAMA_SUMMARY_GUIDE.md](OLLAMA_SUMMARY_GUIDE.md)
+
 ### Customizing Confidential Terms
 
 You can customize which terms to sanitize by editing the `confidential_terms.py` file:

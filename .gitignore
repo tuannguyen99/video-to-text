@@ -59,6 +59,9 @@ models/
 # Summary files (both sanitized and restored)
 *_summary*.txt
 
+# Translation files (both sanitized and restored)
+*_translation*.txt
+
 # Video files (input)
 *.mp4
 *.mkv
