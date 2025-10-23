@@ -67,8 +67,9 @@ def check_model_available(model_name):
         bool: True if model is available, False otherwise
     """
     try:
-        models = ollama.list()
-        available_models = [model['name'] for model in models.get('models', [])]
+        response = ollama.list()
+        # ollama.list() returns ListResponse object with models attribute
+        available_models = [model.model for model in response.models]
         
         for available in available_models:
             if model_name in available or available.startswith(model_name):
