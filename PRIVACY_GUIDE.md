@@ -58,6 +58,7 @@ python test_sanitization.py
 
 ## Usage
 
+### Forward Process (Sanitize)
 ```bash
 # Normal use (creates both files)
 python main.py video.mp4
@@ -65,6 +66,17 @@ python main.py video.mp4
 # Only create original (no sanitization)
 python main.py video.mp4 --no-sanitize
 ```
+
+### Reverse Process (Restore)
+```bash
+# Restore sanitized file to original
+python reverse_sanitize.py video_sanitized.txt
+
+# Specify custom output
+python reverse_sanitize.py video_sanitized.txt -o original.txt
+```
+
+**Output:** Creates `video_restored.txt` with confidential information restored.
 
 ## Best Practices
 
@@ -81,12 +93,21 @@ python main.py video.mp4 --no-sanitize
 
 ## Example Workflow
 
+### Standard Workflow (with sanitization)
 1. Transcribe video: `python main.py meeting.mp4`
 2. Check both outputs:
    - `meeting.txt` (original - keep private)
    - `meeting_sanitized.txt` (safe - can share)
 3. Share only the sanitized version
 4. Add new terms to `confidential_terms.py` as needed
+
+### Restoration Workflow (when needed)
+1. Receive sanitized file: `meeting_sanitized.txt`
+2. Restore to original: `python reverse_sanitize.py meeting_sanitized.txt`
+3. Get restored output: `meeting_restored.txt`
+4. Keep restored file secure (contains confidential info)
+
+⚠️ **Security Note**: Only restore sanitized files when you have authorization to access the original confidential information.
 
 ## Tips
 

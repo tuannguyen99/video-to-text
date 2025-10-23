@@ -46,9 +46,13 @@ models/
 !PRIVACY_GUIDE.md
 !PRIVACY_IMPLEMENTATION.md
 !PRIVACY_SETUP_COMPLETE.md
+!GITHUB_SETUP.md
 
 # Sanitized output files
 *_sanitized.txt
+
+# Restored output files (contain original confidential info)
+*_restored.txt
 
 # Video files (input)
 *.mp4

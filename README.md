@@ -186,6 +186,22 @@ The script automatically sanitizes confidential information in transcriptions by
 - "Anh chị" → "AC"
 - "Kiến thức" → "KT"
 
+### Reverse Sanitization (NEW!)
+
+You can now restore sanitized text back to its original form using the reverse sanitization tool:
+
+```bash
+# Restore a sanitized file
+python reverse_sanitize.py video_sanitized.txt
+
+# Specify custom output location
+python reverse_sanitize.py video_sanitized.txt -o restored_original.txt
+```
+
+**Output:** Creates a `video_restored.txt` file with original confidential information restored.
+
+⚠️ **Important**: Only use this tool when you have authorization to access the original confidential information. The restored file should be kept secure.
+
 ### Customizing Confidential Terms
 
 You can customize which terms to sanitize by editing the `confidential_terms.py` file:
