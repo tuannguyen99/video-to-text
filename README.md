@@ -12,12 +12,16 @@ A Python script for transcribing video files using WhisperX offline with GPU acc
 - 📱 Simple command-line interface
 - 🔒 Automatic sanitization of confidential information
 - 🛡️ Privacy protection with customizable term replacement
+- 🤖 LLM summarization with Ollama (NEW!)
+- 🔄 Bidirectional sanitization (forward and reverse)
+- 📊 Complete privacy-preserving pipeline
 
 ## Requirements
 
 - Python 3.8 or higher
 - NVIDIA GPU with CUDA support (optional, but recommended)
 - FFmpeg installed on your system
+- Ollama (optional, for LLM summarization)
 
 ### System Dependencies
 
@@ -201,6 +205,62 @@ python reverse_sanitize.py video_sanitized.txt -o restored_original.txt
 **Output:** Creates a `video_restored.txt` file with original confidential information restored.
 
 ⚠️ **Important**: Only use this tool when you have authorization to access the original confidential information. The restored file should be kept secure.
+
+### LLM Summarization with Ollama (NEW!)
+
+Generate AI-powered summaries of your transcriptions while maintaining privacy protection:
+
+#### Complete Pipeline (Recommended)
+
+Process video → transcribe → sanitize → summarize → restore in one command:
+
+```bash
+# Full pipeline with default settings
+python process_video_complete.py presentation.mp4
+
+# Use different Ollama model
+python process_video_complete.py meeting.mkv --model llama2
+
+# Limit summary length
+python process_video_complete.py video.mp4 --max-length 200
+```
+
+**Output files:**
+- `video.txt` - Original transcription
+- `video_sanitized.txt` - Sanitized transcription (safe to share)
+- `video_summary_sanitized.txt` - Sanitized summary (safe to share)
+- `video_summary_restored.txt` - Restored summary (confidential)
+
+#### Step-by-Step Approach
+
+```bash
+# Step 1: Transcribe video
+python main.py presentation.mp4
+
+# Step 2: Summarize sanitized transcription
+python summarize_with_ollama.py presentation_sanitized.txt
+```
+
+#### Privacy Protection in Summarization
+
+```
+Original: "Anh chị học Kiến thức mới"
+    ↓ (Sanitization)
+Sanitized: "AC học KT mới"
+    ↓ (Sent to Ollama - No confidential info leaked!)
+Summary: "Buổi học giới thiệu AC với KT"
+    ↓ (Restoration)
+Final: "Buổi học giới thiệu Anh chị với Kiến thức"
+```
+
+🔒 **Key Point**: Ollama only processes sanitized text, ensuring confidential information never leaves your system in its original form.
+
+**Prerequisites for Ollama:**
+1. Install Ollama: https://ollama.com/download
+2. Start service: `ollama serve`
+3. Download model: `ollama pull llama3.2`
+
+📖 **For complete Ollama setup and usage, see:** [OLLAMA_SUMMARY_GUIDE.md](OLLAMA_SUMMARY_GUIDE.md)
 
 ### Customizing Confidential Terms
 

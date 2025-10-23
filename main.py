@@ -83,13 +83,14 @@ def transcribe_video(video_path, output_path=None, sanitize=True):
         sanitize (bool, optional): Whether to sanitize confidential information. Default is True.
     
     Returns:
-        bool: True if transcription successful, False otherwise
+        tuple: (original_path, sanitized_path) if sanitize=True, or (original_path, None) if sanitize=False
+        Returns (None, None) on error
     """
     try:
         # Check if input file exists
         if not os.path.exists(video_path):
             print(f"Error: Video file '{video_path}' not found.")
-            return False
+            return None, None
         
         # Determine device
         device = check_gpu_availability()
@@ -134,6 +135,9 @@ def transcribe_video(video_path, output_path=None, sanitize=True):
         
         print(f"Original transcription saved to: {output_path}")
         
+        # Initialize sanitized path
+        sanitized_output_path = None
+        
         # Sanitize and save redacted version if sanitize is enabled
         if sanitize:
             sanitized_text = sanitize_text(transcription_text)
@@ -151,11 +155,11 @@ def transcribe_video(video_path, output_path=None, sanitize=True):
         
         print(f"Transcription completed successfully!")
         
-        return True
+        return output_path, sanitized_output_path
         
     except Exception as e:
         print(f"Error during transcription: {str(e)}")
-        return False
+        return None, None
 
 
 def main():
@@ -196,9 +200,9 @@ Examples:
     args = parser.parse_args()
     
     # Run transcription
-    success = transcribe_video(args.video_path, args.output, sanitize=not args.no_sanitize)
+    original_path, sanitized_path = transcribe_video(args.video_path, args.output, sanitize=not args.no_sanitize)
     
-    if success:
+    if original_path:
         sys.exit(0)
     else:
         sys.exit(1)

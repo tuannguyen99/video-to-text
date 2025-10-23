@@ -47,12 +47,17 @@ models/
 !PRIVACY_IMPLEMENTATION.md
 !PRIVACY_SETUP_COMPLETE.md
 !GITHUB_SETUP.md
+!REVERSE_SANITIZATION_GUIDE.md
+!OLLAMA_SUMMARY_GUIDE.md
 
 # Sanitized output files
 *_sanitized.txt
 
 # Restored output files (contain original confidential info)
 *_restored.txt
+
+# Summary files (both sanitized and restored)
+*_summary*.txt
 
 # Video files (input)
 *.mp4
