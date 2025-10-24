@@ -4,6 +4,12 @@ Test script to demonstrate the text sanitization feature.
 """
 
 import re
+import sys
+from pathlib import Path
+
+# Add src directory to path
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
 from confidential_terms import CONFIDENTIAL_TERMS, ADVANCED_PATTERNS
 
 

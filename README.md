@@ -2,6 +2,32 @@
 
 A Python script for transcribing video files using WhisperX offline with GPU acceleration support.
 
+## Project Structure
+
+```
+whisperx/
+├── src/                          # Source code
+│   ├── main.py                   # Simple transcription script
+│   ├── process_video_complete.py # Complete pipeline with all features
+│   ├── confidential_terms.py     # Privacy protection terms
+│   ├── reverse_sanitize.py       # Restore confidential information
+│   ├── summarize_with_ollama.py  # LLM summarization
+│   └── translate_with_ollama.py  # LLM translation
+├── test/                         # Test scripts
+│   ├── test_sanitization.py
+│   ├── test_reverse_sanitization.py
+│   ├── test_complete_pipeline.py
+│   └── test_translation.py
+├── videos/                       # Videos and output files
+│   ├── *.mp4                     # Your video files
+│   ├── *_sanitized.txt           # Sanitized transcriptions
+│   ├── *_summary*.txt            # Summaries
+│   └── *_translation*.txt        # Translations
+├── venv/                         # Virtual environment
+├── requirements.txt              # Python dependencies
+└── README.md                     # This file
+```
+
 ## Features
 
 - 🎥 Video file transcription using WhisperX
@@ -149,33 +175,48 @@ Ensure the following are ready:
 
 ### Basic Usage
 ```bash
-python main.py <video_file_path>
+# Simple transcription (from project root)
+python src/main.py videos/your_video.mp4
+
+# Complete pipeline with all features
+python src/process_video_complete.py videos/your_video.mp4
 ```
 
 ### Examples
 ```bash
 # Transcribe a video file
-python main.py test.mkv
+python src/main.py videos/test.mkv
 
 # Transcribe with custom output file
-python main.py test.mkv -o my_transcription.txt
+python src/main.py videos/test.mkv -o videos/my_transcription.txt
 
 # Transcribe a video with spaces in the filename
-python main.py "my video file.mp4"
+python src/main.py "videos/my video file.mp4"
 
 # Disable sanitization (keep original confidential information)
-python main.py test.mkv --no-sanitize
+python src/main.py videos/test.mkv --no-sanitize
+
+# Complete pipeline: transcribe + summarize + translate
+python src/process_video_complete.py videos/test.mp4 --summarize --translate English
 ```
 
 ### Output Files
 
-By default, the script creates **two output files**:
+By default, the script creates files in the same directory as the video:
 
 1. **Original transcription**: `video_name.txt` - Contains the raw transcription
 2. **Sanitized transcription**: `video_name_sanitized.txt` - Contains transcription with confidential information replaced
+3. **Summaries** (if --summarize): `video_name_summary_sanitized.txt` and `video_name_summary_restored.txt`
+4. **Translations** (if --translate): `video_name_translation_{lang}_sanitized.txt` and `video_name_translation_{lang}_restored.txt`
 
 ### Command Line Options
 
+**main.py (Simple Transcription)**:
+- `video_path`: Path to the video file to transcribe (required)
+- `-o, --output`: Custom output text file path (optional)
+- `--no-sanitize`: Disable sanitization
+
+**process_video_complete.py (Complete Pipeline)**:
 - `video_path`: Path to the video file to transcribe (required)
 - `-o, --output`: Custom output text file path (optional, default: `video_name.txt`)
 - `--no-sanitize`: Disable sanitization and only create the original transcription file
@@ -216,13 +257,13 @@ Process video → transcribe → sanitize → summarize → restore in one comma
 
 ```bash
 # Full pipeline with default settings
-python process_video_complete.py presentation.mp4
+python src/process_video_complete.py videos/ presentation.mp4
 
 # Use different Ollama model
-python process_video_complete.py meeting.mkv --model llama2
+python src/process_video_complete.py videos/ meeting.mkv --model llama2
 
 # Limit summary length
-python process_video_complete.py video.mp4 --max-length 200
+python src/process_video_complete.py videos/ video.mp4 --max-length 200
 ```
 
 **Output files:**
@@ -238,7 +279,7 @@ python process_video_complete.py video.mp4 --max-length 200
 python main.py presentation.mp4
 
 # Step 2: Summarize sanitized transcription
-python summarize_with_ollama.py presentation_sanitized.txt
+python src/summarize_with_ollama.py presentation_sanitized.txt
 ```
 
 #### Privacy Protection in Summarization
@@ -272,16 +313,16 @@ Process video → transcribe → sanitize → translate → restore in one comma
 
 ```bash
 # Translate to English
-python process_video_complete.py presentation.mp4 --translate English
+python src/process_video_complete.py videos/ presentation.mp4 --translate English
 
 # Translate to Japanese with specific model
-python process_video_complete.py video.mp4 --translate Japanese --model llama2
+python src/process_video_complete.py videos/ video.mp4 --translate Japanese --model llama2
 
 # Translate AND summarize
-python process_video_complete.py video.mp4 --translate English --max-length 200
+python src/process_video_complete.py videos/ video.mp4 --translate English --max-length 200
 
 # Specify source language explicitly
-python process_video_complete.py video.mp4 --translate English --source-lang Vietnamese
+python src/process_video_complete.py videos/ video.mp4 --translate English --source-lang Vietnamese
 ```
 
 **Output files:**
@@ -297,7 +338,7 @@ python process_video_complete.py video.mp4 --translate English --source-lang Vie
 python main.py presentation.mp4
 
 # Step 2: Translate sanitized transcription
-python translate_with_ollama.py presentation_sanitized.txt --target-lang English
+python src/translate_with_ollama.py presentation_sanitized.txt --target-lang English
 ```
 
 #### Privacy Protection in Translation
@@ -318,7 +359,7 @@ Final: "Hello Anh chị, learning new Kiến thức"
 
 ```bash
 # Keep codes in translation (safe to share)
-python process_video_complete.py video.mp4 --translate English --keep-sanitized
+python src/process_video_complete.py videos/ video.mp4 --translate English --keep-sanitized
 # Result: "Hello AC, learning new KT" (codes remain)
 ```
 

@@ -14,6 +14,9 @@ import os
 from pathlib import Path
 import tempfile
 
+# Add src directory to path
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
 # Import required modules
 try:
     from confidential_terms import CONFIDENTIAL_TERMS
