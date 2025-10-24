@@ -367,6 +367,57 @@ python src/process_video_complete.py videos/ video.mp4 --translate English --kee
 
 📖 **For complete translation guide, see:** [OLLAMA_SUMMARY_GUIDE.md](OLLAMA_SUMMARY_GUIDE.md)
 
+### Google Translate Automation (NEW!)
+
+Automate translation using Google Translate's web interface with browser automation:
+
+#### Basic Usage
+
+```bash
+# Auto-translate to English (auto-detect source language)
+python src/auto_translate_google.py videos/file.txt --target-lang English
+
+# Specify both source and target languages
+python src/auto_translate_google.py videos/file_sanitized.txt --source-lang vi --target-lang en
+
+# Save to custom output file
+python src/auto_translate_google.py videos/file.txt --target-lang English --output videos/custom_name.txt
+
+# Run in headless mode (no browser window)
+python src/auto_translate_google.py videos/file.txt --target-lang English --headless
+```
+
+**How it works:**
+1. Opens Microsoft Edge browser
+2. Navigates to translate.google.com
+3. Enters your text in the source text box
+4. Waits for translation to complete
+5. Clicks the copy button to get translated text
+6. Saves to file with `_autotranslated.txt` suffix
+
+**Output file:** `filename_autotranslated.txt`
+
+**Supported Languages**: English, Vietnamese, Spanish, French, German, Chinese, Japanese, Korean, Thai, Russian, Portuguese, Italian, Arabic, Hindi, and more!
+
+**Prerequisites:**
+- Microsoft Edge browser must be installed
+- Internet connection required
+- First run will download Edge WebDriver automatically
+
+**Comparison with Ollama Translation:**
+
+| Feature | Google Translate | Ollama Translation |
+|---------|-----------------|-------------------|
+| **Privacy** | ⚠️ Sends data to Google | ✅ 100% Local/Offline |
+| **Speed** | 🟡 Fast (depends on internet) | 🟡 Moderate (depends on model) |
+| **Quality** | 🟢 High for common languages | 🟡 Good (varies by model) |
+| **Languages** | 🟢 100+ languages | 🟡 Limited by model |
+| **Cost** | ✅ Free | ✅ Free |
+| **Setup** | 🟢 Easy (just browser) | 🟡 Requires Ollama install |
+| **Character Limit** | ⚠️ ~5000 chars | ✅ No limit |
+
+💡 **Recommendation**: Use Google Translate for quick translations and many languages. Use Ollama for privacy-sensitive content!
+
 ### Customizing Confidential Terms
 
 You can customize which terms to sanitize by editing the `confidential_terms.py` file:
