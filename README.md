@@ -418,6 +418,82 @@ python src/auto_translate_google.py videos/file.txt --target-lang English --head
 
 💡 **Recommendation**: Use Google Translate for quick translations and many languages. Use Ollama for privacy-sensitive content!
 
+### Send to Microsoft Teams (NEW!)
+
+Automatically send translation results to a Microsoft Teams channel:
+
+#### Setup Teams Webhook
+
+1. **Open Microsoft Teams** and navigate to your channel
+2. **Click '...'** (More options) next to the channel name
+3. **Select 'Connectors'** or **'Workflows'**
+4. **Search for 'Incoming Webhook'**
+5. **Click 'Configure'** or **'Add'**
+6. **Give it a name** (e.g., "Translation Bot")
+7. **Copy the webhook URL**
+8. **Click 'Done'**
+
+#### Usage
+
+```bash
+# Translate and send to Teams:
+python src/auto_translate_google.py videos/file.txt --target-lang English --send-to-teams --teams-webhook "https://outlook.office.com/webhook/..."
+
+# Save webhook for future use:
+python src/send_to_teams.py videos/output.txt --webhook "https://..." --save-webhook
+
+# Use saved webhook:
+python src/auto_translate_google.py videos/file.txt --target-lang English --send-to-teams
+
+# Send any file to Teams:
+python src/send_to_teams.py videos/translation.txt --title "Translation Complete!"
+
+# Send multiple files:
+python src/send_to_teams.py videos/file1.txt videos/file2.txt videos/file3.txt
+
+# Don't include content preview:
+python src/send_to_teams.py videos/file.txt --no-content
+```
+
+#### What Gets Sent to Teams
+
+The Teams message includes:
+- 📄 **File name** and location
+- 📊 **File size** and character count
+- 📅 **Creation timestamp**
+- 📝 **Content preview** (first 1000 characters, configurable)
+- 🔗 **Quick action button** to open folder
+
+**Message Example:**
+```
+🌐 Auto Translation Complete
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+File: video_sanitized_autotranslated.txt
+Size: 2,543 bytes (2.48 KB)
+Location: C:\whisperx\videos
+Characters: 1,847
+
+📄 Content Preview:
+Then let's start AC guys. Today we will learn 
+a very easy lesson about its core knowledge...
+
+[📂 Open Folder]
+```
+
+**Features:**
+- ✅ Automatic notifications when translation completes
+- ✅ Rich formatted messages with file details
+- ✅ Content preview included
+- ✅ Webhook URL saved for reuse
+- ✅ Works with any text file
+
+**Integration with Translation:**
+```bash
+# Complete workflow: Translate → Sanitize → Send to Teams
+python src/process_video_complete.py videos/ video.mp4 --translate English --send-to-teams
+```
+
 ### Customizing Confidential Terms
 
 You can customize which terms to sanitize by editing the `confidential_terms.py` file:

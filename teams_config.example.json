@@ -1,0 +1,6 @@
+{
+  "webhook_url": "",
+  "default_include_content": true,
+  "default_max_content_length": 1000,
+  "channel_name": "Translation Updates"
+}

@@ -27,6 +27,9 @@ from pathlib import Path
 import subprocess
 
 # Import project modules
+import sys
+sys.path.insert(0, os.path.dirname(__file__))
+
 try:
     from main import transcribe_video, check_gpu_availability
 except ImportError:
@@ -40,6 +43,14 @@ try:
 except ImportError:
     print("Error: Required modules (summarize_with_ollama.py, translate_with_ollama.py or reverse_sanitize.py) not found")
     sys.exit(1)
+
+# Import Teams integration (optional)
+try:
+    from send_to_teams import send_file_to_teams
+    TEAMS_AVAILABLE = True
+except ImportError:
+    TEAMS_AVAILABLE = False
+    send_file_to_teams = None
 
 
 def print_section(title):
@@ -335,6 +346,17 @@ Note on Translation Restoration:
         help='Source language for translation (optional, auto-detect if not specified)'
     )
     
+    parser.add_argument(
+        '--send-to-teams',
+        action='store_true',
+        help='Send result files to Microsoft Teams channel'
+    )
+    
+    parser.add_argument(
+        '--teams-webhook',
+        help='Microsoft Teams webhook URL (or use saved webhook from config)'
+    )
+    
     args = parser.parse_args()
     
     # Print header
@@ -379,6 +401,47 @@ Note on Translation Restoration:
             print(f"  {len([k for k in results if 'summary' in k or 'translation_sanitized' in k]) + 3}. Translation → Restored (confidential info recovered)")
         
         print("\n✓ Confidential information protected throughout the process")
+        
+        # Send to Teams if requested
+        if args.send_to_teams:
+            print_section("SENDING TO MICROSOFT TEAMS")
+            
+            if not TEAMS_AVAILABLE:
+                print("❌ Error: send_to_teams module not available")
+                print("Please ensure send_to_teams.py is in the src/ directory")
+            elif not args.teams_webhook:
+                print("❌ Error: Teams webhook URL not provided")
+                print("Use --teams-webhook option or set TEAMS_WEBHOOK_URL environment variable")
+            else:
+                try:
+                    video_name = Path(args.video_file).name
+                    
+                    # Send each result file
+                    sent_count = 0
+                    for key, file_path in results.items():
+                        if Path(file_path).exists():
+                            file_name = Path(file_path).name
+                            print(f"\nSending {file_name}...")
+                            
+                            success = send_file_to_teams(
+                                file_path=file_path,
+                                webhook_url=args.teams_webhook,
+                                title=f"📄 {key.replace('_', ' ').title()} - {video_name}",
+                                include_content=(key in ['translation_restored', 'summary_restored']),
+                                max_content_length=1000
+                            )
+                            
+                            if success:
+                                print(f"  ✓ {file_name} sent successfully")
+                                sent_count += 1
+                            else:
+                                print(f"  ✗ Failed to send {file_name}")
+                    
+                    print(f"\n✓ Sent {sent_count}/{len(results)} files to Teams!")
+                    
+                except Exception as e:
+                    print(f"❌ Error sending to Teams: {e}")
+        
         return 0
     else:
         print("\n" + "="*70)

@@ -26,6 +26,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
+# Import Teams integration
+try:
+    from send_to_teams import send_file_to_teams
+except ImportError:
+    send_file_to_teams = None
+
 
 # Language code mapping for Google Translate
 LANGUAGE_CODES = {
@@ -284,7 +290,7 @@ def translate_with_google(text, source_lang='auto', target_lang='en', headless=F
             driver.quit()
 
 
-def process_file(input_file, target_lang='en', source_lang='auto', output_file=None, headless=False):
+def process_file(input_file, target_lang='en', source_lang='auto', output_file=None, headless=False, send_to_teams=False, teams_webhook=None):
     """
     Process a file through Google Translate automation.
     
@@ -294,6 +300,8 @@ def process_file(input_file, target_lang='en', source_lang='auto', output_file=N
         source_lang: Source language (auto-detect if not specified)
         output_file: Path to output file (optional)
         headless: Run browser in headless mode
+        send_to_teams: Send result to Microsoft Teams
+        teams_webhook: Teams webhook URL
     """
     print("=" * 60)
     print("GOOGLE TRANSLATE AUTOMATION")
@@ -354,6 +362,32 @@ def process_file(input_file, target_lang='en', source_lang='auto', output_file=N
     print("=" * 60)
     print(f"\n✓ Output file: {output_file}")
     print(f"✓ Translation length: {len(translated_text)} characters")
+    
+    # Send to Teams if requested
+    if send_to_teams:
+        print("\n" + "=" * 60)
+        print("SENDING TO MICROSOFT TEAMS")
+        print("=" * 60)
+        try:
+            # Import send_to_teams module
+            from send_to_teams import send_file_to_teams
+            
+            success = send_file_to_teams(
+                file_path=output_file,
+                webhook_url=teams_webhook,
+                title=f"🌐 Translation Complete: {target_lang}",
+                include_content=True,
+                max_content_length=1000
+            )
+            
+            if not success:
+                print("⚠ Warning: Failed to send to Teams, but translation completed successfully")
+        except ImportError:
+            print("⚠ Warning: send_to_teams module not found")
+        except Exception as e:
+            print(f"⚠ Warning: Error sending to Teams: {e}")
+    
+    return output_file
 
 
 def main():
@@ -391,6 +425,10 @@ Supported languages:
                        help='Output file path (default: input_file_autotranslated.txt)')
     parser.add_argument('--headless', action='store_true',
                        help='Run browser in headless mode (no visible window)')
+    parser.add_argument('--send-to-teams', action='store_true',
+                       help='Send translated file to Microsoft Teams channel')
+    parser.add_argument('--teams-webhook',
+                       help='Microsoft Teams webhook URL (or use saved webhook from config)')
     
     args = parser.parse_args()
     
@@ -399,7 +437,9 @@ Supported languages:
         target_lang=args.target_lang,
         source_lang=args.source_lang,
         output_file=args.output,
-        headless=args.headless
+        headless=args.headless,
+        send_to_teams=args.send_to_teams,
+        teams_webhook=args.teams_webhook
     )
 
 
