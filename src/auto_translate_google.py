@@ -148,6 +148,9 @@ def translate_with_google(text, source_lang='auto', target_lang='en', headless=F
                 "textarea[aria-label*='Source text']",
                 "textarea[aria-label*='Văn bản nguồn']",
                 "textarea.er8xn",
+                "textarea[id^='input-']",  # Matches id="input-21", "input-22", etc.
+                "textarea.v_field__input",
+                "textarea#input-21",
                 "textarea[jsname]",
             ]
             
@@ -190,6 +193,44 @@ def translate_with_google(text, source_lang='auto', target_lang='en', headless=F
                 except:
                     continue
             
+            # If copy button not found, try finding by text "SUBMIT"
+            if not copy_button:
+                try:
+                    copy_button = wait.until(
+                        EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'SUBMIT')]"))
+                    )
+                except:
+                    pass
+            
+            # If still not found, try finding button with icon class 'mdi-content-copy'
+            if not copy_button:
+                icon_selectors = [
+                    # Method 1: Find button containing icon (any descendant):
+                    (By.XPATH, "//button[.//i[contains(@class, 'mdi-content-copy')]]"),
+                    # Method 2: Find button containing icon (exact class):
+                    (By.XPATH, "//button[.//i[@class='mdi-content-copy']]"),
+                    # Method 3: Find icon first, then get button ancestor:
+                    (By.CSS_SELECTOR, "i.mdi-content-copy"),
+                    # Method 4: Find button with span containing icon:
+                    (By.XPATH, "//button[.//span[@class='icon-wrapper']//i[contains(@class, 'mdi-content-copy')]]"),
+                    # Method 5: Find button with any mdi icon:
+                    (By.XPATH, "//button[.//i[starts-with(@class, 'mdi-')]]"),
+                ]
+                
+                for by, selector in icon_selectors:
+                    try:
+                        if by == By.CSS_SELECTOR:
+                            # Find icon first, then navigate to button:
+                            icon = wait.until(EC.presence_of_element_located((by, selector)))
+                            copy_button = icon.find_element(By.XPATH, "./ancestor::button")
+                            print(f"✓ Found button via icon: {selector}")
+                        else:
+                            copy_button = wait.until(EC.element_to_be_clickable((by, selector)))
+                            print(f"✓ Found button: {selector}")
+                        break
+                    except:
+                        continue
+            
             if not copy_button:
                 # Try to get translation text directly
                 print("Copy button not found, trying to get text directly...")
@@ -211,9 +252,10 @@ def translate_with_google(text, source_lang='auto', target_lang='en', headless=F
                 
                 raise Exception("Could not find translation or copy button")
             
-            # Click copy button
-            print("Clicking copy button...")
-            copy_button.click()
+            # Click the parent of the copy button instead of the button itself
+            print("Clicking parent of copy button...")
+            parent_element = copy_button.find_element(By.XPATH, "..")
+            parent_element.click()
             time.sleep(1)
             
             # Get text from clipboard
