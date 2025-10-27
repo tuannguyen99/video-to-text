@@ -9,6 +9,9 @@ whisperx/
 ├── src/                          # Source code
 │   ├── main.py                   # Simple transcription script
 │   ├── process_video_complete.py # Complete pipeline with all features
+│   ├── record_audio.py           # Audio recording (mic + system)
+│   ├── auto_translate_google.py  # Google Translate automation
+│   ├── send_to_teams.py          # Microsoft Teams integration
 │   ├── confidential_terms.py     # Privacy protection terms
 │   ├── reverse_sanitize.py       # Restore confidential information
 │   ├── summarize_with_ollama.py  # LLM summarization
@@ -20,6 +23,7 @@ whisperx/
 │   └── test_translation.py
 ├── videos/                       # Videos and output files
 │   ├── *.mp4                     # Your video files
+│   ├── *.wav                     # Audio recordings
 │   ├── *_sanitized.txt           # Sanitized transcriptions
 │   ├── *_summary*.txt            # Summaries
 │   └── *_translation*.txt        # Translations
@@ -31,6 +35,7 @@ whisperx/
 ## Features
 
 - 🎥 Video file transcription using WhisperX
+- 🎙️ Audio recording (microphone + system audio) (NEW!)
 - 🚀 GPU acceleration support (CUDA)
 - 📝 Text output format (.txt)
 - 🔄 Automatic audio extraction from video files
@@ -38,7 +43,9 @@ whisperx/
 - 📱 Simple command-line interface
 - 🔒 Automatic sanitization of confidential information
 - 🛡️ Privacy protection with customizable term replacement
-- 🤖 LLM summarization with Ollama (NEW!)
+- 🤖 LLM summarization with Ollama
+- 🌐 Translation with Ollama or Google Translate (NEW!)
+- 📧 Microsoft Teams integration (NEW!)
 - 🔄 Bidirectional sanitization (forward and reverse)
 - 📊 Complete privacy-preserving pipeline
 
@@ -172,6 +179,45 @@ Ensure the following are ready:
 - ✅ Virtual environment is activated (`(venv)` should appear in your terminal)
 - ✅ FFmpeg is installed and accessible (`ffmpeg -version` works)
 - ✅ You're in the project directory (`whisperx` folder)
+
+### Audio Recording (NEW!)
+
+Record microphone and/or system audio for transcription:
+
+```bash
+# Record both microphone + system audio for 60 seconds
+python src/record_audio.py --duration 60
+
+# Output: videos/recording_mixed_2025-10-28_14-30-00.wav
+
+# Record microphone only
+python src/record_audio.py --duration 30 --microphone-only
+
+# Record system audio only (desktop audio)
+python src/record_audio.py --duration 60 --system-only
+
+# Custom output file
+python src/record_audio.py --duration 120 --output videos/meeting.wav
+
+# Manual stop (press Ctrl+C when done)
+python src/record_audio.py --microphone-only
+
+# List available audio devices
+python src/record_audio.py --list-devices
+```
+
+**Then process the recording:**
+```bash
+# Transcribe recorded audio
+python src/process_video_complete.py videos/recording_mixed.wav
+
+# Transcribe + translate
+python src/process_video_complete.py videos/recording_mixed.wav --translate English
+
+# Full pipeline: record → transcribe → translate → send to Teams
+python src/record_audio.py --duration 60 --output videos/meeting.wav
+python src/process_video_complete.py videos/meeting.wav --translate English --send-to-teams
+```
 
 ### Basic Usage
 ```bash
